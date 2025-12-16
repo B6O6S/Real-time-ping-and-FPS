@@ -1,0 +1,91 @@
+-- LocalScript inside StarterPlayer > StarterPlayerScripts
+
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+
+-- Remove old overlay if it exists
+local oldGui = playerGui:FindFirstChild("PerformanceOverlay")
+if oldGui then
+	oldGui:Destroy()
+end
+
+-- Main ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PerformanceOverlay"
+screenGui.ResetOnSpawn = false -- stays after reset
+screenGui.Parent = playerGui
+
+-- Draggable Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 120, 0, 50)
+mainFrame.Position = UDim2.new(0, 10, 0, 10) -- top left
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+-- FPS Label
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(1, 0, 0.5, 0)
+fpsLabel.Position = UDim2.new(0, 0, 0, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextScaled = true
+fpsLabel.Font = Enum.Font.SourceSansBold
+fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+fpsLabel.Text = "FPS: 0"
+fpsLabel.Parent = mainFrame
+
+-- Ping Label
+local pingLabel = Instance.new("TextLabel")
+pingLabel.Size = UDim2.new(1, 0, 0.5, 0)
+pingLabel.Position = UDim2.new(0, 0, 0.5, 0)
+pingLabel.BackgroundTransparency = 1
+pingLabel.TextScaled = true
+pingLabel.Font = Enum.Font.SourceSansBold
+pingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+pingLabel.Text = "Ping: 0 ms"
+pingLabel.Parent = mainFrame
+
+-- FPS Calculation
+local lastUpdate = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+	frameCount += 1
+	local now = tick()
+
+	-- Update FPS every second
+	if now - lastUpdate >= 1 then
+		local fps = math.floor(frameCount / (now - lastUpdate))
+		fpsLabel.Text = "FPS: " .. fps
+
+		-- FPS color thresholds
+		if fps <= 30 then
+			fpsLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Red
+		elseif fps <= 45 then
+			fpsLabel.TextColor3 = Color3.fromRGB(255, 165, 0) -- Orange
+		else
+			fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Green
+		end
+
+		lastUpdate = now
+		frameCount = 0
+	end
+
+	-- Update Ping every frame
+	local pingVal = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+	local ping = math.floor(pingVal)
+	pingLabel.Text = "Ping: " .. ping .. " ms"
+
+	-- Ping color thresholds
+	if ping <= 170 then
+		pingLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Green
+	elseif ping <= 200 then
+		pingLabel.TextColor3 = Color3.fromRGB(255, 165, 0) -- Orange
+	else
+		pingLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Red
+	end
+end)
